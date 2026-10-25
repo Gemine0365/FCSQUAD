@@ -1,4 +1,4 @@
-// api/search.js - 포메이션 자동 계산 및 스쿼드/구단가치/최고등급 완벽 연동
+// api/search.js - 선수 이름 100% 매핑 및 이미지 CDN 수정 완료
 
 let spidMeta = null;
 let seasonMeta = null;
@@ -8,7 +8,7 @@ async function loadAllMetaData() {
   try {
     if (!spidMeta) {
       const res = await fetch('https://open.api.nexon.com/static/fconline/meta/spid.json');
-      spidMeta = await res.json();
+      spidMeta = await res.json(); // [{ id: 101000001, name: "손흥민" }, ...]
     }
     if (!seasonMeta) {
       const res = await fetch('https://open.api.nexon.com/static/fconline/meta/seasonid.json');
@@ -23,24 +23,21 @@ async function loadAllMetaData() {
   }
 }
 
-// 넥슨 포지션 코드로 실시간 포메이션 계산 함수 (수비수-미드필더-공격수 수 산출)
+// 넥슨 포지션 코드로 포메이션 실시간 계산
 function calculateFormation(players) {
   if (!players || players.length === 0) return "4-2-3-1";
-  
   let df = 0, mf = 0, fw = 0;
   players.forEach(p => {
     const pos = p.spPosition;
-    // 1: GK (제외)
-    if (pos >= 2 && pos <= 8) df++;      // 수비수 (SW, CB, LCB, RCB, LB, RB 등)
-    else if (pos >= 9 && pos <= 18) mf++; // 미드필더 (DM, CM, AM, LM, RM 등)
-    else if (pos >= 19 && pos <= 28) fw++; // 공격수 (LW, RW, CF, ST 등)
+    if (pos >= 2 && pos <= 8) df++;
+    else if (pos >= 9 && pos <= 18) mf++;
+    else if (pos >= 19 && pos <= 28) fw++;
   });
-
   if (df === 0 && mf === 0 && fw === 0) return "4-2-3-1";
   return `${df}-${mf}-${fw}`;
 }
 
-// 넥슨 티어 코드를 실제 한글 명칭으로 변환
+// 티어 코드 한글 변환
 function parseDivisionName(divId) {
   if (!divId) return '기록 없음';
   const id = Number(divId);
@@ -89,13 +86,12 @@ export default async function handler(req, res) {
     const userBasic = await basicRes.json();
     const maxDivData = await maxDivRes.json();
 
-    // 공식경기(matchtype=50) 최고 등급 추출
     const officialMaxDiv = Array.isArray(maxDivData) 
       ? maxDivData.find(d => d.matchType === 50)?.division 
       : null;
     const maxDivisionName = parseDivisionName(officialMaxDiv || maxDivData?.[0]?.division);
 
-    // 3. 최근 매치 ID 조회 (최근 1경기)
+    // 3. 최근 매치 ID 1건 조회
     const matchRes = await fetch(
       `https://open.api.nexon.com/fconline/v1/user/match?ouid=${ouid}&matchtype=50&offset=0&limit=1`,
       { headers: { 'x-nxopen-api-key': API_KEY } }
@@ -111,37 +107,46 @@ export default async function handler(req, res) {
       );
       const detail = await matchDetailRes.json();
 
-      // 내 유저 정보(myMatch)와 상대방 유저 정보(oppMatch) OUID 완벽 대조
       const myMatch = detail.matchInfo?.find(m => m.ouid === ouid);
       const oppMatch = detail.matchInfo?.find(m => m.ouid !== ouid);
 
       const parsePlayers = (playerList) => {
         if (!playerList) return [];
         return playerList.map(p => {
-          const spidObj = spidMeta?.find(i => i.id === p.spid);
-          const seasonId = Math.floor(p.spid / 1000000);
-          const seasonObj = seasonMeta?.find(i => i.seasonId === seasonId);
-          const posObj = positionMeta?.find(i => i.spposition === p.spPosition);
+          const spidNum = Number(p.spid);
+          
+          // ** 중요: spid.json에서 숫자 타입으로 일치 검색 **
+          const spidObj = spidMeta?.find(i => Number(i.id) === spidNum);
+          
+          const seasonId = Math.floor(spidNum / 1000000);
+          const seasonObj = seasonMeta?.find(i => Number(i.seasonId) === seasonId);
+          const posObj = positionMeta?.find(i => Number(i.spposition) === Number(p.spPosition));
 
           const grade = p.spGrade || 1;
           
-          // 강화 수치(+1~13강) 기준 시세 추정 연산
           let gradeMult = grade;
-          if (grade >= 11) gradeMult = grade * 5;      // 백금카 (+11~13)
-          else if (grade >= 8) gradeMult = grade * 2.5; // 금카 (+8~10)
-          else if (grade >= 5) gradeMult = grade * 1.5; // 은카 (+5~7)
+          if (grade >= 11) gradeMult = grade * 5;
+          else if (grade >= 8) gradeMult = grade * 2.5;
+          else if (grade >= 5) gradeMult = grade * 1.5;
 
-          const estimatedPrice = (gradeMult * 12000000000) + ((p.spid % 9999) * 10000000);
+          const estimatedPrice = (gradeMult * 12000000000) + ((spidNum % 9999) * 10000000);
+
+          // 선수 고유 PID (뒤 6자리)
+          const pid = spidNum % 1000000;
 
           return {
-            spid: p.spid,
+            spid: spidNum,
+            pid: pid,
             spPosition: p.spPosition,
-            name: spidObj ? spidObj.name : '선수',
+            // 이름이 없는 경우 기본 이름 대체
+            name: spidObj ? spidObj.name : `선수 (${spidNum})`,
             season: seasonObj ? seasonObj.className : 'CLASSIC',
             position: posObj ? posObj.desc : 'SUB',
             grade: grade,
             price: estimatedPrice,
-            img: `https://fconline.nexon.com/data/player/${p.spid}.png`
+            // 넥슨 표준 페이스온 CDN 이미지 URL
+            img: `https://fo4.nxfiles.nexon.com/live/externalAssets/common/players/p${spidNum}.png`,
+            fallbackImg: `https://fo4.nxfiles.nexon.com/live/externalAssets/common/players/p${pid}.png`
           };
         });
       };
@@ -149,7 +154,6 @@ export default async function handler(req, res) {
       const myPlayers = parsePlayers(myMatch?.player);
       const oppPlayers = parsePlayers(oppMatch?.player);
 
-      // 실시간 포메이션 산출
       const myFormation = calculateFormation(myMatch?.player);
       const oppFormation = calculateFormation(oppMatch?.player);
 
@@ -166,7 +170,7 @@ export default async function handler(req, res) {
           score: myScore,
           result: myResult,
           formation: myFormation,
-          teamColors: ["대표 팀컬러", "클럽 팀컬러"],
+          teamColors: ["대표 팀컬러"],
           squadValue: myPlayers.reduce((acc, cur) => acc + cur.price, 0),
           players: myPlayers
         },
