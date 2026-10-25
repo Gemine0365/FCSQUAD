@@ -17,11 +17,11 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- Navigation Bar -->
+  <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
-        <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-xl tracking-tighter shadow-md shadow-emerald-200">
+        <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-200">
           FC
         </div>
         <span class="text-xl font-extrabold tracking-tight text-slate-900">
@@ -29,10 +29,9 @@
         </span>
       </div>
 
-      <!-- Quick Links -->
       <div class="flex items-center gap-3 text-xs font-semibold text-slate-500">
         <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200">
-          ● API LIVE
+          ● REAL-TIME API
         </span>
       </div>
     </div>
@@ -41,16 +40,15 @@
   <!-- Main Container -->
   <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
     
-    <!-- Hero & Search Section -->
+    <!-- Search Bar Section -->
     <section class="text-center my-6 max-w-2xl mx-auto">
       <h1 class="text-3xl font-extrabold text-slate-900 sm:text-4xl tracking-tight">
         구단주 전적 & 스쿼드 검색
       </h1>
       <p class="text-slate-500 mt-2 text-sm">
-        상대방 및 내 구단의 포메이션, 팀컬러, 선수 시세, 강화 정보를 한눈에 확인하세요.
+        상대방 및 내 구단의 포메이션, 구단 가치, 티어, 선수 시세, 강화 정보를 한눈에 확인하세요.
       </p>
 
-      <!-- Search Input Box -->
       <div class="mt-6 relative">
         <form id="searchForm" onsubmit="handleSearch(event)" class="flex gap-2">
           <div class="relative flex-1">
@@ -58,7 +56,7 @@
             <input 
               type="text" 
               id="nicknameInput"
-              placeholder="구단주 닉네임을 입력하세요 (예: 넥슨구단주)" 
+              placeholder="구단주 닉네임을 입력하세요" 
               class="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent shadow-sm transition"
               required
             />
@@ -80,10 +78,10 @@
       </div>
     </section>
 
-    <!-- Loading State Spinner -->
+    <!-- Loading Spinner -->
     <div id="loadingSpinner" class="hidden py-16 text-center">
       <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-emerald-600 border-t-transparent"></div>
-      <p class="text-slate-500 font-medium mt-4 text-sm">넥슨 오픈 API 데이터 조회 중...</p>
+      <p class="text-slate-500 font-medium mt-4 text-sm">넥슨 오픈 API 데이터 분석 및 스쿼드 로딩 중...</p>
     </div>
 
     <!-- Error View -->
@@ -91,10 +89,10 @@
       <span id="errorText">구단주를 찾을 수 없습니다.</span>
     </div>
 
-    <!-- Search Results View -->
+    <!-- Search Results Container -->
     <div id="resultContainer" class="hidden space-y-6">
       
-      <!-- User Summary Banner -->
+      <!-- User Information Banner -->
       <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-700 font-black text-2xl shadow-inner">
@@ -103,12 +101,12 @@
           <div>
             <div class="flex items-center gap-2">
               <h2 id="userNickname" class="text-2xl font-bold text-slate-900">구단주명</h2>
-              <span id="userLevel" class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded font-semibold border border-slate-200">
+              <span id="userLevel" class="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-slate-200">
                 Lv.100
               </span>
             </div>
             <p id="userMaxDiv" class="text-xs text-slate-500 font-medium mt-1">
-              최고 등급: 월드클래스 1부
+              최고 등급: 로딩 중...
             </p>
           </div>
         </div>
@@ -116,8 +114,8 @@
         <!-- Recent Match Result Badge -->
         <div id="matchSummary" class="flex items-center gap-4 bg-slate-50 px-5 py-3 rounded-2xl border border-slate-200/80">
           <div class="text-right">
-            <div class="text-xs text-slate-400 font-medium">최근 경기 결과</div>
-            <div id="matchScore" class="text-lg font-black text-slate-800">2 : 1</div>
+            <div class="text-xs text-slate-400 font-medium">최근 공식경기 결과</div>
+            <div id="matchScore" class="text-lg font-black text-slate-800">0 : 0</div>
           </div>
           <div id="matchBadge" class="bg-emerald-600 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-sm">
             승리
@@ -141,31 +139,26 @@
             onclick="switchSquad('opponent')"
             class="px-5 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900"
           >
-            상대방 스쿼드
+            상대방 스쿼드 (<span id="oppNicknameLabel">상대</span>)
           </button>
         </div>
 
-        <!-- Squad Summary Metadata (Formation, Team Color, Value) -->
+        <!-- Squad Summary Metadata (Formation, Value) -->
         <div class="flex flex-wrap items-center gap-3 text-xs">
           <div class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
             <span class="text-slate-400">포메이션:</span>
             <span id="squadFormation" class="font-bold text-slate-800">4-2-3-1</span>
           </div>
           <div class="bg-white border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-            <span class="text-slate-400">구단가치:</span>
+            <span class="text-slate-400">출전 구단가치:</span>
             <span id="squadValue" class="font-bold text-emerald-600">0 BP</span>
           </div>
         </div>
       </div>
 
-      <!-- Team Color Badges -->
-      <div id="teamColorContainer" class="flex flex-wrap gap-2">
-        <!-- JS로 팀컬러 배지 동적 삽입 -->
-      </div>
-
       <!-- Squad Player Cards Grid -->
       <div id="playerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <!-- JS로 선수 카드 동적 삽입 -->
+        <!-- JS로 동적 생성 -->
       </div>
 
     </div>
@@ -179,18 +172,16 @@
     </div>
   </footer>
 
-  <!-- Main JavaScript Code -->
+  <!-- Main JavaScript Logic -->
   <script>
     let currentMatchData = null;
-    let currentTab = 'my';
 
     // 아이콘 초기화
     lucide.createIcons();
     loadRecentSearches();
 
-    // 최근 검색어 불러오기
     function loadRecentSearches() {
-      const tags = JSON.parse(localStorage.getItem('fcsquad_recent') || '["넥슨구단주", "손흥민"]');
+      const tags = JSON.parse(localStorage.getItem('fcsquad_recent') || '["넥슨구단주"]');
       const container = document.getElementById('recentTags');
       container.innerHTML = tags.map(tag => `
         <button onclick="executeSearch('${tag}')" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 px-2.5 py-1 rounded-lg text-xs font-medium transition">
@@ -199,7 +190,6 @@
       `).join('');
     }
 
-    // 최근 검색어 저장
     function saveRecentSearch(nickname) {
       let tags = JSON.parse(localStorage.getItem('fcsquad_recent') || '[]');
       tags = [nickname, ...tags.filter(t => t !== nickname)].slice(0, 5);
@@ -207,13 +197,11 @@
       loadRecentSearches();
     }
 
-    // 검색 실행 (클릭 처리)
     function executeSearch(nickname) {
       document.getElementById('nicknameInput').value = nickname;
       handleSearch(new Event('submit'));
     }
 
-    // 전적 검색 메인 로직
     async function handleSearch(e) {
       if (e) e.preventDefault();
       const nickname = document.getElementById('nicknameInput').value.trim();
@@ -228,7 +216,6 @@
       resultView.classList.add('hidden');
 
       try {
-        // Vercel Serverless Function 호출
         const response = await fetch(`/api/search?nickname=${encodeURIComponent(nickname)}`);
         const data = await response.json();
 
@@ -248,20 +235,21 @@
       }
     }
 
-    // API 데이터 랜더링
     function renderData(data) {
-      // 1. 유저 헤더
+      // 유저 기본 정보
       document.getElementById('userNickname').innerText = data.user.nickname;
       document.getElementById('userLevel').innerText = `Lv.${data.user.level}`;
       document.getElementById('userMaxDiv').innerText = `최고 등급: ${data.user.maxDivision}`;
 
-      // 2. 매치 결과
+      // 매치 결과
       if (data.matchInfo) {
         currentMatchData = data.matchInfo;
         const my = data.matchInfo.my;
         const opp = data.matchInfo.opponent;
 
         document.getElementById('matchScore').innerText = `${my.score} : ${opp.score}`;
+        document.getElementById('oppNicknameLabel').innerText = opp.nickname;
+
         const badge = document.getElementById('matchBadge');
         if (my.result === '승') {
           badge.innerText = '승리';
@@ -278,9 +266,7 @@
       }
     }
 
-    // 스쿼드 탭 전환 (내 스쿼드 vs 상대방 스쿼드)
     function switchSquad(type) {
-      currentTab = type;
       const tabMy = document.getElementById('tabMy');
       const tabOpp = document.getElementById('tabOpp');
 
@@ -293,51 +279,38 @@
       }
 
       if (!currentMatchData) return;
-      const squadData = currentMatchData[type];
+      const squad = currentMatchData[type];
 
-      // 포메이션 및 가치 업데이트
-      document.getElementById('squadFormation').innerText = squadData.formation;
-      document.getElementById('squadValue').innerText = formatBP(squadData.squadValue);
+      document.getElementById('squadFormation').innerText = squad.formation;
+      document.getElementById('squadValue').innerText = formatBP(squad.squadValue);
 
-      // 팀컬러 배지 출력
-      const tcContainer = document.getElementById('teamColorContainer');
-      tcContainer.innerHTML = squadData.teamColors.map(tc => `
-        <span class="bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-semibold text-xs px-3 py-1 rounded-xl flex items-center gap-1">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ${tc}
-        </span>
-      `).join('');
-
-      // 선수 카드 그리드 출력
       const grid = document.getElementById('playerGrid');
-      grid.innerHTML = squadData.players.map(p => {
-        const gradeColor = getGradeBadgeColor(p.grade);
+      grid.innerHTML = squad.players.map(p => {
+        const gradeStyle = getGradeStyle(p.grade);
         return `
           <div class="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col items-center hover:border-emerald-500 transition shadow-sm relative overflow-hidden group">
-            <!-- Position & Season Badge -->
             <div class="w-full flex items-center justify-between text-[11px] font-bold mb-1">
               <span class="text-slate-500">${p.position}</span>
               <span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] border border-slate-200">${p.season}</span>
             </div>
 
-            <!-- Player Image & Grade Badge -->
+            <!-- 이미지 깜빡임 방지: onerror=null 처리 -->
             <div class="relative w-16 h-16 my-1">
               <img 
                 src="${p.img}" 
                 alt="${p.name}" 
                 class="w-full h-full object-contain filter drop-shadow-sm" 
-                onerror="this.src='https://fconline.nexon.com/data/player/default.png'"
+                onerror="this.onerror=null; this.src='https://fconline.nexon.com/data/player/default.png';"
               />
-              <span class="${gradeColor} text-white font-black text-[10px] px-1.5 py-0.2 rounded-md absolute bottom-0 right-0 shadow-sm">
+              <span class="${gradeStyle} text-[10px] px-1.5 py-0.2 rounded-md absolute bottom-0 right-0 shadow-sm">
                 +${p.grade}
               </span>
             </div>
 
-            <!-- Player Name -->
             <div class="font-bold text-xs text-slate-900 truncate w-full text-center mt-1">
               ${p.name}
             </div>
 
-            <!-- Player Price -->
             <div class="text-[11px] font-semibold text-emerald-600 mt-0.5">
               ${formatBP(p.price)}
             </div>
@@ -348,7 +321,7 @@
       lucide.createIcons();
     }
 
-    // BP 금액 가독성 포맷 (억/조 단위 연산)
+    // BP 단위 포맷
     function formatBP(value) {
       if (!value) return '0 BP';
       if (value >= 1000000000000) {
@@ -359,11 +332,20 @@
       return value.toLocaleString() + ' BP';
     }
 
-    // 강화 단계별 색상 지정 (+1~4: 동/기본, +5~7: 은카, +8~10: 금카)
-    function getGradeBadgeColor(grade) {
-      if (grade >= 8) return 'bg-amber-400 text-slate-900'; // 금카
-      if (grade >= 5) return 'bg-slate-300 text-slate-800'; // 은카
-      return 'bg-amber-700'; // 동카/기본
+    // 강화 단계별 배지 클래스 (+11~13강 백금카 지원)
+    function getGradeStyle(grade) {
+      if (grade >= 11) {
+        // 백금카 (+11 ~ +13)
+        return 'bg-gradient-to-r from-slate-100 via-sky-100 to-slate-200 text-slate-900 border border-slate-300 font-black';
+      } else if (grade >= 8) {
+        // 금카 (+8 ~ +10)
+        return 'bg-amber-400 text-slate-900 font-extrabold';
+      } else if (grade >= 5) {
+        // 은카 (+5 ~ +7)
+        return 'bg-slate-300 text-slate-800 font-bold';
+      }
+      // 동카 (+1 ~ +4)
+      return 'bg-amber-700 text-white font-medium';
     }
   </script>
 </body>
